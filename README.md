@@ -15,6 +15,8 @@ manifests/                the components themselves (kustomize / plain YAML)
 | Argo CD (self-managed) | upstream `install.yaml` v3.5.6, trimmed with kustomize (no Dex, notifications, ApplicationSet) | -1 |
 | cert-manager | Helm chart `jetstack/cert-manager` v1.21.3 | 0 |
 | ClusterIssuers | Let's Encrypt staging + prod, DNS-01 via Cloudflare | 1 |
+| Traefik config | k3s-bundled Traefik: production wildcard cert as default TLS, HTTP→HTTPS redirect | 2 |
+| hello | nginx (unprivileged) demo page at https://hello.devopsdelisi.fun | 3 |
 
 ## Bootstrap (once per cluster)
 
@@ -48,7 +50,9 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.pas
 ```bash
 kubectl -n argocd get applications          # all Synced / Healthy
 kubectl get clusterissuers                   # both Ready
-kubectl -n cert-manager get certificate      # wildcard-staging-test Ready
+kubectl -n kube-system get certificate       # wildcard-devopsdelisi Ready
+curl -I http://hello.devopsdelisi.fun        # 308 -> https
+curl -s https://hello.devopsdelisi.fun | head
 ```
 
 ## Secrets

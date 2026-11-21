@@ -1,0 +1,21 @@
+# Config for the Traefik that ships with k3s: default wildcard TLS cert + HTTP->HTTPS redirect.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: traefik-config
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/barisMarathon/devops-marathon-gitops.git
+    targetRevision: main
+    path: manifests/traefik
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -1,0 +1,14 @@
+# One production wildcard certificate, used by Traefik as the default for every Ingress.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-devopsdelisi
+  namespace: kube-system
+spec:
+  secretName: wildcard-devopsdelisi-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - devopsdelisi.fun
+    - "*.devopsdelisi.fun"
