@@ -1,4 +1,8 @@
 # k3s-specific: overrides values of the bundled Traefik Helm chart.
+# The redirect is set with Traefik's own static-config flags rather than chart values,
+# so it doesn't depend on the chart version k3s ships.
+# "to=:443" (a port, not the entrypoint name) keeps the redirect on the public port
+# instead of Traefik's internal container port.
 apiVersion: helm.cattle.io/v1
 kind: HelmChartConfig
 metadata:
@@ -6,10 +10,7 @@ metadata:
   namespace: kube-system
 spec:
   valuesContent: |-
-    ports:
-      web:
-        redirections:
-          entryPoint:
-            to: websecure
-            scheme: https
-            permanent: true
+    additionalArguments:
+      - "--entryPoints.web.http.redirections.entryPoint.to=:443"
+      - "--entryPoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entryPoints.web.http.redirections.entryPoint.permanent=true"
