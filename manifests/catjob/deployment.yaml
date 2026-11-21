@@ -1,0 +1,122 @@
+# Backend: the API and its JSON store. Exactly one replica, because the store lives in memory
+# and on a ReadWriteOnce volume; Recreate stops the old pod before the new one mounts the volume.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catjob-backend
+  labels:
+    app: catjob-backend
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: catjob-backend
+  template:
+    metadata:
+      labels:
+        app: catjob-backend
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: backend
+          image: ghcr.io/barismarathon/catjob-backend
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: COOKIE_SECURE
+              value: "true"
+            - name: LOG_LEVEL
+              value: info
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 20
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: catjob-data
+---
+# Frontend: nginx serving the static client and proxying /api and /photos to the backend Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catjob-frontend
+  labels:
+    app: catjob-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: catjob-frontend
+  template:
+    metadata:
+      labels:
+        app: catjob-frontend
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: frontend
+          image: ghcr.io/barismarathon/catjob-frontend
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: BACKEND_URL
+              value: http://catjob-backend
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 20

@@ -1,0 +1,22 @@
+# No tls.secretName needed: Traefik serves the default wildcard certificate.
+# Everything goes to the frontend; nginx there forwards /api and /photos to the backend.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: catjob
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: catjob.devopsdelisi.fun
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: catjob-frontend
+                port:
+                  name: http

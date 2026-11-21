@@ -1,0 +1,14 @@
+# Player data: db.json and uploaded photos. Uses the cluster's default StorageClass (k3s local-path).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: catjob-data
+  annotations:
+    # Keep the data even if this file is removed from git or the Argo CD app is deleted
+    argocd.argoproj.io/sync-options: Delete=false
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

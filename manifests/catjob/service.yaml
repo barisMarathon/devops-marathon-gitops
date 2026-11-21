@@ -1,0 +1,24 @@
+# Cluster-internal only; the frontend reaches it as http://catjob-backend
+apiVersion: v1
+kind: Service
+metadata:
+  name: catjob-backend
+spec:
+  selector:
+    app: catjob-backend
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catjob-frontend
+spec:
+  selector:
+    app: catjob-frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
