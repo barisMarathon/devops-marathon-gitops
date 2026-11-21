@@ -7,4 +7,4 @@ resources:
 # newTag is bumped by CI in barisMarathon/devops-marathon-hello on every push to main
 images:
   - name: ghcr.io/barismarathon/devops-marathon-hello
-    newTag: sha-d63b475
+    newTag: sha-93ceee8
