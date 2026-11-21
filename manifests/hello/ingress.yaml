@@ -9,7 +9,7 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - host: hello.devopsdelisi.fun
+    - host: blog.devopsdelisi.fun
       http:
         paths:
           - path: /
