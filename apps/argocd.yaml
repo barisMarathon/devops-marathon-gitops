@@ -1,0 +1,23 @@
+# Argo CD manages itself from manifests/argocd.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/barisMarathon/devops-marathon-gitops.git
+    targetRevision: main
+    path: manifests/argocd
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: false      # never let Argo CD prune its own components
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true

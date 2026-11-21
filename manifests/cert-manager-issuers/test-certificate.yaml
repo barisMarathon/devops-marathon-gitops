@@ -1,0 +1,15 @@
+# Smoke test for the DNS-01 setup against Let's Encrypt staging (no rate limits).
+# Remove once the production wildcard certificate is in place (phase 3).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-staging-test
+  namespace: cert-manager
+spec:
+  secretName: wildcard-staging-test-tls
+  issuerRef:
+    name: letsencrypt-staging
+    kind: ClusterIssuer
+  dnsNames:
+    - devopsdelisi.fun
+    - "*.devopsdelisi.fun"
