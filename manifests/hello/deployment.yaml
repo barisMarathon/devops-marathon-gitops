@@ -20,7 +20,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: nginx
-          image: nginxinc/nginx-unprivileged:1.29-alpine
+          image: ghcr.io/barismarathon/devops-marathon-hello
           ports:
             - containerPort: 8080
               name: http
@@ -38,11 +38,3 @@ spec:
             httpGet:
               path: /
               port: http
-          volumeMounts:
-            - name: html
-              mountPath: /usr/share/nginx/html
-              readOnly: true
-      volumes:
-        - name: html
-          configMap:
-            name: hello-html

@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+# newTag is bumped by CI in barisMarathon/devops-marathon-hello on every push to main
+images:
+  - name: ghcr.io/barismarathon/devops-marathon-hello
+    newTag: latest
