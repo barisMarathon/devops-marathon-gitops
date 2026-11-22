@@ -1,11 +1,13 @@
-# Player data: db.json and uploaded photos. Uses the cluster's default StorageClass (k3s local-path).
+# The retired JSON store (db.json + photos/) from before Postgres. Nothing mounts it any more;
+# it is kept as a cold backup. To retire it, delete it by hand and remove this file together:
+#   kubectl -n catjob delete pvc catjob-data
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: catjob-data
   annotations:
-    # Keep the data even if this file is removed from git or the Argo CD app is deleted
-    argocd.argoproj.io/sync-options: Delete=false
+    # Prune=false: never deleted by an automated sync; Delete=false: kept if the app is deleted
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
 spec:
   accessModes:
     - ReadWriteOnce

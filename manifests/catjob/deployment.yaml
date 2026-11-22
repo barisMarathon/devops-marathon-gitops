@@ -1,6 +1,5 @@
-# Backend: the API, with all data in Postgres. Still one replica with Recreate while it mounts
-# the old JSON store volume (catjob-data) to import it once; once the import is confirmed, the
-# volume and LEGACY_DATA_DIR go away and the backend can run several replicas.
+# Backend: the API. Stateless (all data is in Postgres), so it rolls out without downtime and
+# can run more replicas when needed.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -9,8 +8,6 @@ metadata:
     app: catjob-backend
 spec:
   replicas: 1
-  strategy:
-    type: Recreate
   selector:
     matchLabels:
       app: catjob-backend
@@ -26,7 +23,6 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 1000
-        fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -48,8 +44,6 @@ spec:
             # $(POSTGRES_PASSWORD) is expanded by Kubernetes from the variable above
             - name: DATABASE_URL
               value: postgres://catjob:$(POSTGRES_PASSWORD)@catjob-postgres:5432/catjob
-            - name: LEGACY_DATA_DIR
-              value: /data
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -70,14 +64,6 @@ spec:
               path: /healthz
               port: http
             periodSeconds: 20
-          # Not read-only on purpose: the previous image still writes here until the new one rolls out
-          volumeMounts:
-            - name: data
-              mountPath: /data
-      volumes:
-        - name: data
-          persistentVolumeClaim:
-            claimName: catjob-data
 ---
 # Frontend: nginx serving the static client and proxying /api and /photos to the backend Service
 apiVersion: apps/v1
