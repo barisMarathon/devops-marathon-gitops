@@ -1,0 +1,89 @@
+# Single Postgres instance for all app data. The password comes from the Secret catjob-postgres
+# (key: password), created by hand. The volume comes from volumeClaimTemplates, so Kubernetes
+# keeps it when the StatefulSet is deleted and Argo CD never prunes it.
+apiVersion: v1
+kind: Service
+metadata:
+  name: catjob-postgres
+spec:
+  selector:
+    app: catjob-postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: catjob-postgres
+  labels:
+    app: catjob-postgres
+spec:
+  serviceName: catjob-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: catjob-postgres
+  template:
+    metadata:
+      labels:
+        app: catjob-postgres
+    spec:
+      automountServiceAccountToken: false
+      # uid/gid 70 is the postgres user of the alpine image
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 70
+        runAsGroup: 70
+        fsGroup: 70
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: postgres
+          image: postgres:18-alpine
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_USER
+              value: catjob
+            - name: POSTGRES_DB
+              value: catjob
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: catjob-postgres
+                  key: password
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "catjob", "-d", "catjob"]
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "catjob", "-d", "catjob"]
+            periodSeconds: 20
+            failureThreshold: 6
+          volumeMounts:
+            # Postgres 18 images keep PGDATA under /var/lib/postgresql/18/docker
+            - name: data
+              mountPath: /var/lib/postgresql
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 5Gi

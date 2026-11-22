@@ -1,5 +1,6 @@
-# Backend: the API and its JSON store. Exactly one replica, because the store lives in memory
-# and on a ReadWriteOnce volume; Recreate stops the old pod before the new one mounts the volume.
+# Backend: the API, with all data in Postgres. Still one replica with Recreate while it mounts
+# the old JSON store volume (catjob-data) to import it once; once the import is confirmed, the
+# volume and LEGACY_DATA_DIR go away and the backend can run several replicas.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -39,6 +40,16 @@ spec:
               value: "true"
             - name: LOG_LEVEL
               value: info
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: catjob-postgres
+                  key: password
+            # $(POSTGRES_PASSWORD) is expanded by Kubernetes from the variable above
+            - name: DATABASE_URL
+              value: postgres://catjob:$(POSTGRES_PASSWORD)@catjob-postgres:5432/catjob
+            - name: LEGACY_DATA_DIR
+              value: /data
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -59,6 +70,7 @@ spec:
               path: /healthz
               port: http
             periodSeconds: 20
+          # Not read-only on purpose: the previous image still writes here until the new one rolls out
           volumeMounts:
             - name: data
               mountPath: /data

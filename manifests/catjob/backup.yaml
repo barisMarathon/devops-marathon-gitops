@@ -1,0 +1,81 @@
+# Nightly pg_dump into its own volume, keeping the last 7 days. This protects against bad
+# deploys and mistakes, not against losing the node's disk: copy dumps off the cluster for that.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: catjob-backups
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: catjob-postgres-backup
+spec:
+  schedule: "30 3 * * *"
+  timeZone: Europe/Istanbul
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 70
+            runAsGroup: 70
+            fsGroup: 70
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: pg-dump
+              image: postgres:18-alpine
+              env:
+                - name: PGHOST
+                  value: catjob-postgres
+                - name: PGUSER
+                  value: catjob
+                - name: PGDATABASE
+                  value: catjob
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: catjob-postgres
+                      key: password
+              command: ["/bin/sh", "-c"]
+              # Write to a temp name first so a half-finished dump never looks like a good one
+              args:
+                - |
+                  set -eu
+                  file="/backups/catjob-$(date +%Y%m%d-%H%M).dump"
+                  pg_dump --format=custom --file="$file.tmp"
+                  mv "$file.tmp" "$file"
+                  find /backups -name 'catjob-*.dump' -mtime +7 -delete
+                  ls -lh /backups
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 64Mi
+                limits:
+                  memory: 256Mi
+              volumeMounts:
+                - name: backups
+                  mountPath: /backups
+          volumes:
+            - name: backups
+              persistentVolumeClaim:
+                claimName: catjob-backups
