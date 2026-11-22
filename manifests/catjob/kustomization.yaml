@@ -10,6 +10,6 @@ resources:
 # newTag is bumped by CI in barisMarathon/catJob on every push to main (both images share the tag)
 images:
   - name: ghcr.io/barismarathon/catjob-backend
-    newTag: sha-29b3273
+    newTag: sha-6f44701
   - name: ghcr.io/barismarathon/catjob-frontend
-    newTag: sha-29b3273
+    newTag: sha-6f44701
