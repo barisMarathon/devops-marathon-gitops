@@ -3,8 +3,15 @@
 # so it doesn't depend on the chart version k3s ships.
 # "to=:443" (a port, not the entrypoint name) keeps the redirect on the public port
 # instead of Traefik's internal container port.
-# externalTrafficPolicy: Local keeps the real client IP (otherwise ServiceLB/kube-proxy SNAT it),
-# which IP allow-lists such as kubenotes' tailnet-only middleware rely on. Fine on a single node.
+#
+# Real client IPs: k3s ServiceLB (klipper) masquerades traffic, so Traefik only ever saw the svclb
+# pod IP (10.42.x), even with externalTrafficPolicy: Local. IP allow-lists (kubenotes'
+# tailnet-only middleware) need the real IP, so Traefik binds 80/443 on the node itself via
+# hostPort and its Service is plain ClusterIP (no svclb pods). Single node, single replica.
+# - updateStrategy: the new pod can't bind the same hostPorts while the old one runs,
+#   so stop the old pod first (a few seconds of downtime per Traefik upgrade).
+# - ingressendpoint.ip: without a LoadBalancer, Traefik publishes this IP in Ingress status
+#   (Argo CD shows Ingresses as Progressing while that status is empty).
 apiVersion: helm.cattle.io/v1
 kind: HelmChartConfig
 metadata:
@@ -16,6 +23,20 @@ spec:
       - "--entryPoints.web.http.redirections.entryPoint.to=:443"
       - "--entryPoints.web.http.redirections.entryPoint.scheme=https"
       - "--entryPoints.web.http.redirections.entryPoint.permanent=true"
+      - "--providers.kubernetesingress.ingressendpoint.ip=161.97.158.158"
+    providers:
+      kubernetesIngress:
+        publishedService:
+          enabled: false
+    ports:
+      web:
+        hostPort: 80
+      websecure:
+        hostPort: 443
     service:
-      spec:
-        externalTrafficPolicy: Local
+      type: ClusterIP
+    updateStrategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 1
+        maxSurge: 0
