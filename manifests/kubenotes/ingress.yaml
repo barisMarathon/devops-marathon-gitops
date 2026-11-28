@@ -1,0 +1,22 @@
+# No tls.secretName needed: Traefik serves the default wildcard certificate.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kubenotes
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.middlewares: kubenotes-tailnet-only@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: kubenotes.devopsdelisi.fun
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kubenotes
+                port:
+                  name: http

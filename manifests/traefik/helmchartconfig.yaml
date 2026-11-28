@@ -3,6 +3,8 @@
 # so it doesn't depend on the chart version k3s ships.
 # "to=:443" (a port, not the entrypoint name) keeps the redirect on the public port
 # instead of Traefik's internal container port.
+# externalTrafficPolicy: Local keeps the real client IP (otherwise ServiceLB/kube-proxy SNAT it),
+# which IP allow-lists such as kubenotes' tailnet-only middleware rely on. Fine on a single node.
 apiVersion: helm.cattle.io/v1
 kind: HelmChartConfig
 metadata:
@@ -14,3 +16,6 @@ spec:
       - "--entryPoints.web.http.redirections.entryPoint.to=:443"
       - "--entryPoints.web.http.redirections.entryPoint.scheme=https"
       - "--entryPoints.web.http.redirections.entryPoint.permanent=true"
+    service:
+      spec:
+        externalTrafficPolicy: Local

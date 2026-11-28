@@ -1,0 +1,30 @@
+# Strictly read-only: KubeNotes can only get/list/watch, never change the cluster.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubenotes
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubenotes-readonly
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces", "pods"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubenotes-readonly
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubenotes-readonly
+subjects:
+  - kind: ServiceAccount
+    name: kubenotes
+    namespace: kubenotes

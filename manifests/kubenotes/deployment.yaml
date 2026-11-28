@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubenotes
+  labels:
+    app.kubernetes.io/name: kubenotes
+spec:
+  replicas: 1
+  # SQLite on a RWO volume: never run two pods at once
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubenotes
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kubenotes
+    spec:
+      serviceAccountName: kubenotes
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: kubenotes
+          image: ghcr.io/barismarathon/kubernotes
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: KUBENOTES_ADDR
+              value: ":8080"
+            - name: KUBENOTES_DB_PATH
+              value: /data/kubenotes.db
+            - name: KUBENOTES_CLUSTER_NAME
+              value: devops-marathon
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 25m
+              memory: 48Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: kubenotes-data
+        - name: tmp
+          emptyDir: {}
