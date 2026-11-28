@@ -1,13 +1,13 @@
-# KubeNotes has no login, so it is reachable only from the tailnet.
-# DNS points kubenotes.devopsdelisi.fun at the node's Tailscale IP; this allow-list also blocks
-# anyone who hits the public IP with a forged Host header. Needs real client IPs at Traefik
-# (externalTrafficPolicy: Local, see manifests/traefik/helmchartconfig.yaml).
+# KubeNotes is public; the app does its own login (bcrypt passwords, roles).
+# The app has no brute-force protection of its own, so Traefik rate-limits the login
+# endpoint per client IP (Traefik sees real IPs since it binds 80/443 via hostPort).
+# 5 attempts per minute on average, bursts of up to 10.
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: tailnet-only
+  name: login-ratelimit
 spec:
-  ipAllowList:
-    sourceRange:
-      - 100.64.0.0/10          # Tailscale IPv4 (CGNAT range)
-      - fd7a:115c:a1e0::/48    # Tailscale IPv6
+  rateLimit:
+    average: 5
+    period: 1m
+    burst: 10
