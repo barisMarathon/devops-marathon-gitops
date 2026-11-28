@@ -20,8 +20,9 @@ spec:
                 port:
                   name: http
 ---
-# Same host, /login and /setup only, with the rate limit. Traefik picks the longer
-# (more specific) rule first, so these paths always go through this router.
+# Same host, /login and /setup only, with the rate limit. Explicit priority: Traefik orders
+# routers by rule length, and Path(`/login`) is exactly as long as PathPrefix(`/`), so without
+# it the catch-all router could win and skip the rate limit.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -30,6 +31,7 @@ metadata:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
     traefik.ingress.kubernetes.io/router.middlewares: kubenotes-login-ratelimit@kubernetescrd
+    traefik.ingress.kubernetes.io/router.priority: "1000"
 spec:
   ingressClassName: traefik
   rules:
