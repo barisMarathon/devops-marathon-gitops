@@ -11,4 +11,4 @@ resources:
 # newTag is bumped by CI in barisMarathon/kubenotes on every push to main
 images:
   - name: ghcr.io/barismarathon/kubenotes
-    newTag: sha-915cf7b
+    newTag: sha-b304de2
