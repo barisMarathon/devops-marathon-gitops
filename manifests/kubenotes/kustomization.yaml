@@ -8,7 +8,7 @@ resources:
   - service.yaml
   - middleware.yaml
   - ingress.yaml
-# newTag is bumped by CI in barisMarathon/kubernotes on every push to main
+# newTag is bumped by CI in barisMarathon/kubenotes on every push to main
 images:
-  - name: ghcr.io/barismarathon/kubernotes
+  - name: ghcr.io/barismarathon/kubenotes
     newTag: sha-624b014

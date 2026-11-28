@@ -27,7 +27,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: kubenotes
-          image: ghcr.io/barismarathon/kubernotes
+          image: ghcr.io/barismarathon/kubenotes
           ports:
             - name: http
               containerPort: 8080
